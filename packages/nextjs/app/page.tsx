@@ -1,13 +1,48 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
 import { BugAntIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { Address } from "~~/components/scaffold-eth";
+import { Address, InputBase } from "~~/components/scaffold-eth";
 
 const Home: NextPage = () => {
+  const [buyValue, setBuyValue] = useState("");
+  const [sellValue, setSellValue] = useState("");
+  const [activeTab, setActiveTab] = useState("Sell");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [lastValue, setLastValue] = useState<number | null>(null);
   const { address: connectedAddress } = useAccount();
+
+  const fetchLastValue = useCallback(async () => {
+    try {
+      const response = await fetch("https://api.ripiotrade.co/v3/public/ARSUSDC/ticker");
+      const data = await response.json();
+      setLastValue(data.data.last);
+    } catch (error) {
+      console.error("Error fetching last value:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchLastValue();
+  }, [fetchLastValue]);
+
+  const handleGhostClick = () => {
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
+  const handleModalClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      closeModal();
+    }
+  };
 
   return (
     <>
@@ -15,56 +50,89 @@ const Home: NextPage = () => {
         <div className="px-5">
           <h1 className="text-center">
             <span className="block text-2xl mb-2">Welcome to</span>
-            <span className="block text-4xl font-bold">Scaffold-ETH 2</span>
+            <span className="block text-4xl font-bold">RampAI 👻</span>
           </h1>
-          <div className="flex justify-center items-center space-x-2 flex-col sm:flex-row">
-            <p className="my-2 font-medium">Connected Address:</p>
-            <Address address={connectedAddress} />
+          <div className="mt-4">
+            <span>Easily convert your crypto to fiat and viceversa. Now with AI!</span>
           </div>
-
-          <p className="text-center text-lg">
-            Get started by editing{" "}
-            <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-              packages/nextjs/app/page.tsx
-            </code>
-          </p>
-          <p className="text-center text-lg">
-            Edit your smart contract{" "}
-            <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-              YourContract.sol
-            </code>{" "}
-            in{" "}
-            <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-              packages/hardhat/contracts
-            </code>
-          </p>
         </div>
-
-        <div className="flex-grow bg-base-300 w-full mt-16 px-8 py-12">
-          <div className="flex justify-center items-center gap-12 flex-col sm:flex-row">
-            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-xs rounded-3xl">
-              <BugAntIcon className="h-8 w-8 fill-secondary" />
-              <p>
-                Tinker with your smart contract using the{" "}
-                <Link href="/debug" passHref className="link">
-                  Debug Contracts
-                </Link>{" "}
-                tab.
-              </p>
+        <div className="py-5">
+          <div className="card bg-base-100 w-96 shadow-xl">
+            <div className="tabs ">
+              <button
+                className={`tab text-lg tab-bordered ${activeTab === "Sell" ? "tab-active bg-base-200 rounded-lg" : ""}`}
+                onClick={() => setActiveTab("Sell")}
+              >
+                Sell UXD
+              </button>
+              <button
+                className={`tab text-lg tab-bordered ${activeTab === "Buy" ? "tab-active bg-base-200 rounded-lg" : ""}`}
+                onClick={() => setActiveTab("Buy")}
+              >
+                Buy UXD
+              </button>
             </div>
-            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-xs rounded-3xl">
-              <MagnifyingGlassIcon className="h-8 w-8 fill-secondary" />
-              <p>
-                Explore your local transactions with the{" "}
-                <Link href="/blockexplorer" passHref className="link">
-                  Block Explorer
-                </Link>{" "}
-                tab.
-              </p>
+            <div className="card-body items-center text-center">
+              {activeTab === "Sell" && (
+                <>
+                  <h2 className="card-title">You give</h2>
+                  <div className="flex flex-row gap-3 mb-2">
+                    <InputBase value={sellValue} onChange={setSellValue} placeholder="0.00" />
+                    <Image src="/uxdlogo.png" alt="Ethereum" width={40} height={40} />
+                  </div>
+                  <h2 className="card-title">to receive</h2>
+                  <div className="flex flex-row items-center gap-3 mb-2">
+                    <span>${lastValue && sellValue ? (parseFloat(sellValue) * lastValue).toFixed(2) : "0.00"}</span>
+                    <Image src="/argentina.png" alt="UXD (dollars)" width={40} height={40} />
+                  </div>
+                  <div className="card-actions">
+                    <button className="btn btn-primary bg-orange-800 border-0 sparkle">Send to Ripio!</button>
+                  </div>
+                </>
+              )}
+              {activeTab === "Buy" && (
+                <>
+                  <h2 className="card-title">You give</h2>
+                  <div className="flex flex-row gap-3 mb-2">
+                    <InputBase value={buyValue} onChange={setBuyValue} placeholder="0.00" />
+                    <Image src="/argentina.png" alt="Ethereum" width={40} height={40} />
+                  </div>
+                  <h2 className="card-title">to receive</h2>
+                  <div className="flex flex-row items-center gap-3 mb-2">
+                    <span>${lastValue && buyValue ? (parseFloat(buyValue) / lastValue).toFixed(2) : "0.00"}</span>
+                    <Image src="/uxdlogo.png" alt="UXD (dollars)" width={40} height={40} />
+                  </div>
+                  <div className="card-actions">
+                    <button className="btn btn-primary bg-orange-800 border-0 sparkle">Buy with Ripio!</button>
+                  </div>
+                </>
+              )}
             </div>
+          </div>
+        </div>
+        <div className="mt-2">
+          <div
+            className="p-4 bg-blue-600 rounded-lg flex items-center justify-center text-2xl cursor-pointer"
+            onClick={handleGhostClick}
+          >
+            AI helper! 👻
           </div>
         </div>
       </div>
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+          onClick={handleModalClick}
+        >
+          <div className="bg-base-200 p-5 rounded-lg text-center">
+            <div className="text-6xl mb-4">👻</div>
+            <p className="text-xl mb-4">AI companion coming soon!</p>
+            <button className="btn btn-primary" onClick={closeModal}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </>
   );
 };

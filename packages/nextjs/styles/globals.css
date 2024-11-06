@@ -7,6 +7,33 @@
   background: oklch(var(--b2));
 }
 
+.sparkle {
+  position: relative;
+  overflow: hidden;
+}
+
+.sparkle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 20%, transparent 20%);
+  background-size: 10px 10px;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: sparkle 1s linear infinite;
+}
+
+@keyframes sparkle {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
 body {
   min-height: 100vh;
 }
